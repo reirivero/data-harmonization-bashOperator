@@ -42,7 +42,10 @@ unzip_data= BashOperator(
 
 extract_data_from_csv= BashOperator(
     task_id='extract_data_from_csv',
-    bash_command='cut -d"," -f1-4 < /opt/airflow/data/vehicle-data.csv > /opt/airflow/data/csv_data.csv',
+    bash_command="""
+    DATE=$(date +%Y-%m-%d-%H-%M-%S)
+    cut -d"," -f1-4 < /opt/airflow/data/vehicle-data.csv > /opt/airflow/data/csv_data-$DATE.csv
+    """,
     dag=dag,                        
 )
 
@@ -50,7 +53,7 @@ extract_data_from_csv= BashOperator(
 
 extract_data_from_tsv= BashOperator(
     task_id='extract_data_from_tsv',
-    bash_command='tr "\t" "," < /opt/airflow/data/tollplaza-data.tsv | cut -d"," -f5-7 > /opt/airflow/data/tsv_data.csv',
+    bash_command='tr "\t" "," < /opt/airflow/data/tollplaza-data.tsv | cut -d"," -f5-7 > /opt/airflow/data/tsv_data-$DATE.csv',
     dag=dag,
 )
 
@@ -59,22 +62,24 @@ extract_data_from_tsv= BashOperator(
 extract_data_from_fixed_width= BashOperator(
     task_id='extract_data_from_fixed_width',
     bash_command="""
-    awk '{print substr($0, 1, 6) "," substr($0, 7, 20) "," substr($0, 27, 5) "," substr($0, 32, 12) "," substr($0, 44, 4) "," substr($0, 48, 10) "," substr($0, 58, 4) "," substr($0, 62, 5)}' /opt/airflow/data/payment-data.txt | sed 's/ *, */,/g' | cut -d"," -f7-8 > /opt/airflow/data/fixed_width_data.csv
+    awk '{print substr($0, 1, 6) "," substr($0, 7, 20) "," substr($0, 27, 5) "," substr($0, 32, 12) "," substr($0, 44, 4) "," substr($0, 48, 10) "," substr($0, 58, 4) "," substr($0, 62, 5)}' /opt/airflow/data/payment-data.txt | sed 's/ *, */,/g' | cut -d"," -f7-8 > /opt/airflow/data/fixed_width_data-$DATE.csv
     """,
     dag=dag,
 )
 
 consolidate_data= BashOperator(
     task_id='consolidate_data',
-    bash_command='',
+    bash_command='paste -d "," /opt/airflow/data/csv_data-$DATE.csv /opt/airflow/data/tsv_data-$DATE.csv /opt/airflow/data/fixed_width_data-$DATE.csv > /opt/airflow/data/extracted_data-$DATE.csv',
     dag=dag,
 )
 
 transform_data= BashOperator(
     task_id='transform_data',
-    bash_command='',
+    bash_command="""
+    awk -F, 'BEGIN {OFS=","} { $4=toupper($4); print }' /opt/airflow/data/extracted_data-$DATE.csv > /opt/airflow/data/transformed_data-$DATE.csv
+    """,
     dag=dag,
 )
 
 # task pipeline
-unzip_data >> extract_data_from_csv >> extract_data_from_tsv >> extract_data_from_fixed_width >> consolidate_data >> transform_data
+unzip_data >> extract_data_from_csv >> extract_data_from_tsv >> extract_data_from_fixed_width >> consolidate_data >> transform_data # type: ignore
