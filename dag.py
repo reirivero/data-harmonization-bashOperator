@@ -55,7 +55,7 @@ extract_data_from_tsv= BashOperator(
     task_id='extract_data_from_tsv',
     bash_command="""
     DATE=$(date +%Y-%m-%d)
-    tr "\t" "," < /opt/airflow/data/tollplaza-data.tsv | cut -d"," -f5-7 > /opt/airflow/data/tsv_data-$DATE.csv""",
+    tr "\t" "," < /opt/airflow/data/tollplaza-data.tsv | cut -d"," -f5-7 | sed 's/[[:space:]]*$//' > /opt/airflow/data/tsv_data-$DATE.csv""",
     dag=dag,
 )
 
@@ -65,7 +65,7 @@ extract_data_from_fixed_width= BashOperator(
     task_id='extract_data_from_fixed_width',
     bash_command="""
     DATE=$(date +%Y-%m-%d)
-    awk '{print substr($0, 1, 6) "," substr($0, 7, 20) "," substr($0, 27, 5) "," substr($0, 32, 12) "," substr($0, 44, 4) "," substr($0, 48, 10) "," substr($0, 58, 4) "," substr($0, 62, 5)}' /opt/airflow/data/payment-data.txt | sed 's/ *, */,/g' | cut -d"," -f7-8 > /opt/airflow/data/fixed_width_data-$DATE.csv
+    awk '{print substr($0, 1, 6) "," substr($0, 7, 20) "," substr($0, 27, 5) "," substr($0, 32, 12) "," substr($0, 44, 4) "," substr($0, 48, 10) "," substr($0, 58, 4) "," substr($0, 62, 6)}' /opt/airflow/data/payment-data.txt | sed 's/ *, */,/g' | cut -d"," -f7-8 > /opt/airflow/data/fixed_width_data-$DATE.csv
     """,
     dag=dag,
 )

@@ -166,3 +166,9 @@ dags/
 config/
 plugins/
 logs/
+
+# Ignorar todos los archivos en el directorio data/
+data/*
+
+# Excluir tolldata.tgz de ser ignorado
+!data/tolldata.tgz
